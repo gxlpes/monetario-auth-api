@@ -1,0 +1,15 @@
+version: '3'
+services:
+  auth-api-testing-db:
+    image: postgres:latest
+    container_name: auth-api-testing-db
+    environment:
+      POSTGRES_USER: admin-auth-api-testing
+      POSTGRES_PASSWORD: mysecretpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-api-testing-volume:/var/lib/postgresql/data
+
+volumes:
+  auth-api-testing-volume:
