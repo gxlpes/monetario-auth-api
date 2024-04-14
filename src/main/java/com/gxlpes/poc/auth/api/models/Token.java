@@ -1,6 +1,5 @@
 package com.gxlpes.poc.auth.api.models;
 
-import com.gxlpes.poc.auth.api.token.TokenType;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -17,8 +16,7 @@ public class Token {
   @Column(unique = true)
   public String token;
 
-  @Enumerated(EnumType.STRING)
-  public TokenType tokenType = TokenType.BEARER;
+  public String tokenType;
 
   @CreationTimestamp
   private Instant createdAt;
@@ -37,7 +35,8 @@ public class Token {
   public Token() {
   }
 
-  public Token(String id, String token, TokenType tokenType, boolean revoked, boolean expired, User user) {
+  public Token(String id, String token, String tokenType, boolean revoked,
+               boolean expired, User user) {
     this.id = id;
     this.token = token;
     this.tokenType = tokenType;
@@ -70,11 +69,11 @@ public class Token {
     this.token = token;
   }
 
-  public TokenType getTokenType() {
+  public String getTokenType() {
     return tokenType;
   }
 
-  public void setTokenType(TokenType tokenType) {
+  public void setTokenType(String tokenType) {
     this.tokenType = tokenType;
   }
 

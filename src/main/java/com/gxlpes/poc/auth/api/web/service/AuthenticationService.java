@@ -1,6 +1,7 @@
 package com.gxlpes.poc.auth.api.web.service;
 
 import com.gxlpes.poc.auth.api.web.request.AuthenticationRequest;
+import com.gxlpes.poc.auth.api.web.request.ChangePasswordRequest;
 import com.gxlpes.poc.auth.api.web.response.AuthenticationResponse;
 import com.gxlpes.poc.auth.api.web.request.RegisterRequest;
 import com.gxlpes.poc.auth.api.web.request.VerificationRequest;
@@ -9,7 +10,6 @@ import com.gxlpes.poc.auth.api.models.Token;
 import com.gxlpes.poc.auth.api.models.User;
 import com.gxlpes.poc.auth.api.config.tfa.TwoFactorAuthenticationService;
 import com.gxlpes.poc.auth.api.web.repository.TokenRepository;
-import com.gxlpes.poc.auth.api.token.TokenType;
 import com.gxlpes.poc.auth.api.web.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.security.Principal;
 
 @Service
 public class AuthenticationService {
@@ -47,13 +48,7 @@ public class AuthenticationService {
             throw new Exception("User with email " + request.getEmail() + " " + "already exists.");
         }
 
-        User user = new User(
-                request.getFirstname(),
-                request.getLastname(),
-                request.getEmail(),
-                passwordEncoder.encode(request.getPassword()),
-                request.getRole()
-        );
+        User user = new User(request.getFirstname(), request.getLastname(), request.getEmail(), passwordEncoder.encode(request.getPassword()), request.getRole());
 
         user.setSecret(twoFactorAuthenticationService.generateNewSecret());
         var savedUser = userRepository.save(user);
@@ -75,7 +70,7 @@ public class AuthenticationService {
     }
 
     private void saveUserToken(User user, String jwtToken) {
-        var token = new Token(null, jwtToken, TokenType.BEARER, false, false, user);
+        var token = new Token(null, jwtToken, "Bearer", false, false, user);
         tokenRepository.save(token);
     }
 
@@ -121,5 +116,21 @@ public class AuthenticationService {
         var refreshToken = jwtUtils.generateRefreshToken(user);
 
         return new AuthenticationResponse(jwtToken, refreshToken);
+    }
+
+    public void changePassword(ChangePasswordRequest request, Principal connectedUser) {
+
+        var user = (User) ((UsernamePasswordAuthenticationToken) connectedUser).getPrincipal();
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalStateException("Wrong password");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmationPassword())) {
+            throw new IllegalStateException("Password are not the same");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
     }
 }

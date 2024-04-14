@@ -1,6 +1,6 @@
 {
   "version": "1",
-  "name": "users",
+  "name": "auth",
   "type": "collection",
   "ignore": [
     "node_modules",
