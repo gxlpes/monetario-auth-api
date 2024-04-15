@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -48,7 +49,7 @@ public class AuthenticationService {
             throw new Exception("User with email " + request.getEmail() + " " + "already exists.");
         }
 
-        User user = new User(request.getFirstname(), request.getLastname(), request.getEmail(), passwordEncoder.encode(request.getPassword()), request.getRole());
+        User user = new User(request.getFirstname(), request.getLastname(), passwordEncoder.encode(request.getPassword()), request.getEmail(), request.getRole());
 
         user.setSecret(twoFactorAuthenticationService.generateNewSecret());
         var savedUser = userRepository.save(user);
@@ -59,8 +60,12 @@ public class AuthenticationService {
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
-        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        var user = userRepository.findByEmail(request.getEmail()).orElseThrow(() -> new BadCredentialsException("User not found"));
+
+        if (twoFactorAuthenticationService.isOtpNotValid(user.getSecret(), request.getTfaCode())) {
+            throw new BadCredentialsException("Invalid verification code");
+        }
+
         var jwtToken = jwtUtils.generateToken(user);
         var refreshToken = jwtUtils.generateRefreshToken(user);
         revokeAllUserTokens(user);
@@ -109,7 +114,6 @@ public class AuthenticationService {
     public AuthenticationResponse verifyCode(VerificationRequest verificationRequest) {
         User user = userRepository.findByEmail(verificationRequest.getEmail()).orElseThrow(() -> new EntityNotFoundException(String.format("No user found with %S", verificationRequest.getEmail())));
         if (twoFactorAuthenticationService.isOtpNotValid(user.getSecret(), verificationRequest.getCode())) {
-
             throw new BadCredentialsException("Code is not correct");
         }
         var jwtToken = jwtUtils.generateToken(user);
@@ -119,7 +123,6 @@ public class AuthenticationService {
     }
 
     public void changePassword(ChangePasswordRequest request, Principal connectedUser) {
-
         var user = (User) ((UsernamePasswordAuthenticationToken) connectedUser).getPrincipal();
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -132,5 +135,22 @@ public class AuthenticationService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);
+    }
+
+    public void logout(HttpServletRequest request) {
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return;
+        }
+        jwt = authHeader.substring(7);
+        var storedToken = tokenRepository.findByToken(jwt).orElse(null);
+        if (storedToken != null) {
+            storedToken.setExpired(true);
+            storedToken.setRevoked(true);
+            storedToken.setLogout(true);
+            tokenRepository.save(storedToken);
+            SecurityContextHolder.clearContext();
+        }
     }
 }

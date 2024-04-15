@@ -36,6 +36,9 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     private List<Token> tokens;
 
+    public User() {
+    }
+
     public User(String firstname, String lastname, String password,
                 String email, Role role) {
         this.firstname = firstname;

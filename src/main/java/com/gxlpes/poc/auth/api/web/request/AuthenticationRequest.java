@@ -5,10 +5,20 @@ public class AuthenticationRequest {
 
   private String email;
   String password;
+  String code;
 
-  public AuthenticationRequest(String email, String password) {
+  public AuthenticationRequest(String email, String password, String code) {
     this.email = email;
     this.password = password;
+    this.code = code;
+  }
+
+  public String getTfaCode() {
+    return code;
+  }
+
+  public void setTfaCode(String code) {
+    this.code = code;
   }
 
   public String getEmail() {

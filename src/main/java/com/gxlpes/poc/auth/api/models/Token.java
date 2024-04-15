@@ -28,6 +28,8 @@ public class Token {
 
   public boolean expired;
 
+  public boolean logout;
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
   public User user;
@@ -55,6 +57,10 @@ public class Token {
 
   public String getId() {
     return id;
+  }
+
+  public void setLogout(boolean logout) {
+    this.logout = logout;
   }
 
   public void setId(String id) {

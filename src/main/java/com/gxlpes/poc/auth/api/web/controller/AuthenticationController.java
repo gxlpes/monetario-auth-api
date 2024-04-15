@@ -10,6 +10,7 @@ import com.gxlpes.poc.auth.api.web.utils.ApiRoutes;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -36,30 +37,22 @@ public class AuthenticationController {
     }
 
     @PostMapping(ApiRoutes.AUTH.REFRESH_TOKEN)
-    public void refreshToken(HttpServletRequest request,
-                             HttpServletResponse response) throws IOException {
+    public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
         authenticationService.refreshToken(request, response);
     }
 
     @PostMapping(ApiRoutes.AUTH.VERIFY)
-    public ResponseEntity<?> verifyCode(
-            @RequestBody VerificationRequest verificationRequest
-    ) {
+    public ResponseEntity<?> verifyCode(@RequestBody VerificationRequest verificationRequest) {
         return ResponseEntity.ok(authenticationService.verifyCode(verificationRequest));
     }
 
     @PostMapping(ApiRoutes.AUTH.LOGOUT_USER)
-    public ResponseEntity<?> logoutUser(
-            @RequestBody VerificationRequest verificationRequest
-    ) {
-        return ResponseEntity.ok(authenticationService.verifyCode(verificationRequest));
+    public void logout(HttpServletRequest request) {
+        authenticationService.logout(request);
     }
 
     @PatchMapping(ApiRoutes.AUTH.CHANGE_PASSWORD)
-    public ResponseEntity<?> changePassword(
-            @RequestBody ChangePasswordRequest request,
-            Principal connectedUser
-    ) {
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request, Principal connectedUser) {
         authenticationService.changePassword(request, connectedUser);
         return ResponseEntity.ok().build();
     }
